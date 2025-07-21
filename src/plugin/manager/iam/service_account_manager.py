@@ -26,10 +26,6 @@ class ServiceAccountManager(ResourceManager):
         self.iam_connector = None
         self.rm_v3_connector = None
         self.logging_connector = None
-        self.location_info = {
-            "FOLDER": {},
-            "PROJECT": {},
-        }
 
     def collect_cloud_services(
         self, options: dict, secret_data: dict, schema: str
@@ -53,28 +49,42 @@ class ServiceAccountManager(ResourceManager):
 
     def collect_service_accounts(self, project_id: str) -> Generator[dict, None, None]:
         service_accounts = self.iam_connector.list_service_accounts(project_id)
-        for service_account in service_accounts:
-            yield self.make_cloud_service_info(service_account, project_id)
 
-    def make_cloud_service_info(self, service_account: dict, project_id: str) -> dict:
+        if not service_accounts: # 서비스 계정 목록이 없는 경우 return
+            return
+        
+        unique_service_accounts = {sa["email"]: sa for sa in service_accounts}.values()
+        keys_map = { 
+            sa["email"]: self.get_service_account_keys(sa["email"], project_id)
+            for sa in unique_service_accounts
+        }
+
+        for service_account in service_accounts:
+            keys = keys_map.get(service_account["email"], [])
+            yield self.make_cloud_service_info(service_account, project_id, keys)
+
+    def make_cloud_service_info(self, service_account: dict, project_id: str, keys: list) -> dict:
         name = service_account.get("displayName")
         email = service_account.get("email")
         resource_id = service_account.get("name")
         unique_id = service_account.get("uniqueId")
         disabled = service_account.get("disabled")
+
         if disabled:
             service_account["status"] = "DISABLED"
         else:
             service_account["status"] = "ENABLED"
-        service_account["lastActivityTime"] = (
-            self.logging_connector.get_last_log_entry_timestamp(project_id, email)
-        )
+
+        
+        last_log = self.logging_connector.get_last_log_entry_timestamp(project_id, email)
+        service_account["lastActivityTime"] = last_log
+
+        period_log = self.logging_connector.log_search_period.lower()
         service_account["lastActivityDescription"] = (
-            f"Activity log found in the past {self.logging_connector.log_search_period.lower()}"
-            if service_account["lastActivityTime"]
-            else f"No activity log found in the past {self.logging_connector.log_search_period.lower()}"
+            f"Activity log found in the past {period_log}"
+            if last_log else f"No activity log found in the past {period_log}"
         )
-        keys = self.get_service_account_keys(email, project_id)
+
         service_account["keys"] = keys
         service_account["keyCount"] = len(keys)
 
@@ -97,8 +107,7 @@ class ServiceAccountManager(ResourceManager):
     def get_service_account_keys(self, email: str, project_id: str) -> list:
         keys = self.iam_connector.list_service_account_keys(email, project_id)
         for key in keys:
-            key_full_name = key.get("name")
-            key["name"] = key_full_name.split("/")[-1]
+            key["name"] = key.get("name", "").split("/")[-1]
             key["status"] = "ACTIVE"
 
             creation_time = key.get("validAfterTime")
