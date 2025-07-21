@@ -71,14 +71,10 @@ class RoleManager(ResourceManager):
         role_id = role.get("name")
         role_url = role_id.replace("/", "<")
         role["stage"] = role.get("stage", "ALPHA")
-
-        if role["stage"] == "DISABLED":
-            role["status"] = "DISABLED"
-        else:
-            role["status"] = "ENABLED"
+        role["status"] = "DISABLED" if role["stage"] == "DISABLED" else "ENABLED"
 
         # Get role details
-        if role_type == "PROJECT" or role_type == "ORGANIZATION":
+        if role_type in ["PROJECT", "ORGANIZATION"]:
             role["roleType"] = "CUSTOM"
         else:
             role["roleType"] = role_type
