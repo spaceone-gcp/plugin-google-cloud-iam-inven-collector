@@ -30,9 +30,12 @@ class ResourceManagerV3Connector(GoogleCloudConnector):
         results = self.client.folders().search().execute()
         return results.get("folders", [])
 
-    def list_all_projects(self):
+    def list_all_projects(self, organizations=None):
         projects = []
-        organizations = self.search_organizations()
+
+        if organizations is None:
+            organizations = self.search_organizations()
+
         for organization in organizations:
             organization_id = organization.get("name")
             projects.extend(self.list_projects(organization_id))
