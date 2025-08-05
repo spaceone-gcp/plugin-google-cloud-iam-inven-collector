@@ -1,5 +1,7 @@
 import logging
+
 from spaceone.core import cache
+
 from plugin.connector import GoogleCloudConnector
 from plugin.utils.error_handlers import api_retry_handler
 
@@ -40,13 +42,13 @@ class IAMConnector(GoogleCloudConnector):
     ):
         project_id = project_id or self.project_id
         query = {
-            "name": f"projects/{project_id}/serviceAccounts/{service_account_email}"
+            "name": f"projects/{project_id}/serviceAccounts/{service_account_email}",
+            "keyTypes": ["USER_MANAGED"],
         }
         request = self.client.projects().serviceAccounts().keys().list(**query)
         response = request.execute()
 
-        keys = response.get("keys", [])
-        return list(filter(lambda x: x.get("keyType") == "USER_MANAGED", keys))
+        return response.get("keys", [])
 
     @api_retry_handler(default_response=[])
     def query_testable_permissions(self, resource: str):
