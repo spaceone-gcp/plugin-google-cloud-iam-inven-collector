@@ -30,7 +30,7 @@ class ResourceManagerV3Connector(GoogleCloudConnector):
         results = self.client.folders().search().execute()
         return results.get("folders", [])
 
-    def list_all_projects(self, organizations=None):
+    def list_all_projects(self, organizations=None, folders=None):
         projects = []
 
         if organizations is None:
@@ -40,7 +40,9 @@ class ResourceManagerV3Connector(GoogleCloudConnector):
             organization_id = organization.get("name")
             projects.extend(self.list_projects(organization_id))
 
-        folders = self.search_folders()
+        if folders is None:
+            folders = self.search_folders()
+
         for folder in folders:
             folder_id = folder.get("name")
             projects.extend(self.list_projects(folder_id))
