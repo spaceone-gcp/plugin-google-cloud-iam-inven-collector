@@ -1,6 +1,8 @@
 import logging
 from typing import Generator
-from spaceone.inventory.plugin.collector.lib import *
+
+from spaceone.inventory.plugin.collector.lib import make_cloud_service
+
 from plugin.connector.iam_connector import IAMConnector
 from plugin.connector.resource_manager_v3_connector import ResourceManagerV3Connector
 from plugin.manager.base import ResourceManager
@@ -42,7 +44,7 @@ class RoleManager(ResourceManager):
             yield from self.collect_organization_roles(organization, default_project_id)
 
         # Get all projects
-        projects = self.rm_v3_connector.list_all_projects()
+        projects = self.rm_v3_connector.list_all_projects(organizations)
         for project in projects:
             yield from self.collect_project_roles(project["projectId"])
 

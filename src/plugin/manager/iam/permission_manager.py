@@ -1,6 +1,8 @@
 import logging
 from typing import Generator
-from spaceone.inventory.plugin.collector.lib import *
+
+from spaceone.inventory.plugin.collector.lib import make_cloud_service
+
 from plugin.connector.iam_connector import IAMConnector
 from plugin.connector.resource_manager_v3_connector import ResourceManagerV3Connector
 from plugin.manager.base import ResourceManager
@@ -43,26 +45,32 @@ class PermissionManager(ResourceManager):
 
         organizations = self.rm_v3_connector.search_organizations()
         folders = self.rm_v3_connector.search_folders()
-        projects = self.rm_v3_connector.list_all_projects()
+        projects = self.rm_v3_connector.list_all_projects(organizations, folders)
 
         predefined_roles = self.iam_connector.list_roles()
         organization_roles = []
         for organization in organizations:
-            organization_roles.extend(self.iam_connector.list_organization_roles(
-                organization["name"]
-            ))
+            organization_roles.extend(
+                self.iam_connector.list_organization_roles(organization["name"])
+            )
         project_roles = []
         for project in projects:
-            project_roles.extend(self.iam_connector.list_project_roles(
-                project["projectId"]
-            ))
+            project_roles.extend(
+                self.iam_connector.list_project_roles(project["projectId"])
+            )
 
-        self.role_id_to_info["predefined_roles"] = {role.get("name"): role for role in predefined_roles}
-        self.role_id_to_info["organization_roles"] = {role.get("name"): role for role in organization_roles}
-        self.role_id_to_info["project_roles"] = {role.get("name"): role for role in project_roles}
+        self.role_id_to_info["predefined_roles"] = {
+            role.get("name"): role for role in predefined_roles
+        }
+        self.role_id_to_info["organization_roles"] = {
+            role.get("name"): role for role in organization_roles
+        }
+        self.role_id_to_info["project_roles"] = {
+            role.get("name"): role for role in project_roles
+        }
 
         # Get service account info
-        self.get_service_account_info()
+        self.get_service_account_info(projects)
 
         # Get organization permissions
         for organization in organizations:
@@ -164,6 +172,10 @@ class PermissionManager(ResourceManager):
                 role_details = self.iam_connector.get_role(role_id)
                 self.role_id_to_info["predefined_roles"][role_id] = role_details
 
+        if not role_details:
+            _LOGGER.warning(f"Missing {target_type} role: {role_id} in {target_name}")
+            return
+
         binding_info["role"] = {
             "id": role_details.get("name"),
             "name": role_details.get("title"),
@@ -199,9 +211,9 @@ class PermissionManager(ResourceManager):
                             self.service_account_info[member_id].get("projectId")
                         )
                     else:
-                        self.permission_info[member][
-                            "memberType"
-                        ] = "googleManagedServiceAccount"
+                        self.permission_info[member]["memberType"] = (
+                            "googleManagedServiceAccount"
+                        )
                         if target_type == "PROJECT":
                             self.permission_info[member]["projectId"] = target["id"]
 
@@ -212,9 +224,11 @@ class PermissionManager(ResourceManager):
                 if target_name not in self.permission_info[member]["inheritance"]:
                     self.permission_info[member]["inheritance"].append(target_name)
 
-    def get_service_account_info(self):
+    def get_service_account_info(self, projects=None):
         # Get all projects
-        projects = self.rm_v3_connector.list_all_projects()
+        if projects is None:
+            projects = self.rm_v3_connector.list_all_projects()
+
         for project in projects:
             project_id = project["projectId"]
             service_accounts = self.iam_connector.list_service_accounts(project_id)
