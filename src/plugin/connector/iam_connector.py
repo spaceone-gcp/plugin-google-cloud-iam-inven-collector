@@ -41,6 +41,7 @@ class IAMConnector(GoogleCloudConnector):
         self, service_account_email: str, project_id: str = None
     ):
         project_id = project_id or self.project_id
+        ## 리팩토링 3 : gcp 서비스 계정 키 조회 API 호출 시 필터 추가하여 조회 ("keyTypes": ["USER_MANAGED"])
         query = {
             "name": f"projects/{project_id}/serviceAccounts/{service_account_email}",
             "keyTypes": ["USER_MANAGED"],
@@ -67,14 +68,15 @@ class IAMConnector(GoogleCloudConnector):
 
         return permissions
 
+    ## 리팩토링 3-1 : 인자로 showDeleted=True 추가하여 삭제된 역할도 조회 가능하도록 수정
     @api_retry_handler(default_response=[])
-    def list_project_roles(self, project_id: str = None):
+    def list_project_roles(self, project_id: str = None, show_deleted=False):
         parent = f"projects/{project_id}"
         roles = []
         request = (
             self.client.projects()
             .roles()
-            .list(parent=parent, pageSize=1000, view="FULL")
+            .list(parent=parent, pageSize=1000, view="FULL", showDeleted=show_deleted)
         )
 
         while True:
@@ -93,13 +95,14 @@ class IAMConnector(GoogleCloudConnector):
 
         return roles
 
+    ## 리팩토링 3-1 : 인자로 showDeleted=True 추가하여 삭제된 역할도 조회 가능하도록 수정
     @api_retry_handler(default_response=[])
-    def list_organization_roles(self, resource):
+    def list_organization_roles(self, resource, show_deleted=False):
         roles = []
         request = (
             self.client.organizations()
             .roles()
-            .list(parent=resource, pageSize=1000, view="FULL")
+            .list(parent=resource, pageSize=1000, view="FULL", showDeleted=show_deleted)
         )
 
         while True:
