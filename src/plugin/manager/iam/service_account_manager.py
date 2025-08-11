@@ -40,6 +40,8 @@ class ServiceAccountManager(ResourceManager):
 
         # Get all projects
         projects = self.rm_v3_connector.list_all_projects()
+
+        ## 리팩토링 1 : 프로젝트 ID 가 sys- 로 시작하는 프로젝트는 제외 후 for 문 수행
         filtered_projects = list(
             filter(lambda p: not p["projectId"].startswith("sys-"), projects)
         )
@@ -70,6 +72,7 @@ class ServiceAccountManager(ResourceManager):
         else:
             service_account["status"] = "ENABLED"
 
+        ## 리팩토링 2 : last_activity_time, period_log 변수로 할당 후 사용
         last_activity_time = self.logging_connector.get_last_log_entry_timestamp(
             project_id, email
         )
@@ -102,6 +105,7 @@ class ServiceAccountManager(ResourceManager):
         )
 
     def get_service_account_keys(self, email: str, project_id: str) -> list:
+        ## 리팩토링 3 : gcp 서비스 계정 키 조회 API 호출 시 필터 추가하여 조회 ("keyTypes": ["USER_MANAGED"])
         keys = self.iam_connector.list_service_account_keys(email, project_id)
         for key in keys:
             key["name"] = key.get("name", "").split("/")[-1]

@@ -30,6 +30,7 @@ class ResourceManagerV3Connector(GoogleCloudConnector):
         results = self.client.folders().search().execute()
         return results.get("folders", [])
 
+    ## 리팩토링 1 : 프로젝트 목록 조회 시 인자로 받는 organizations, folders 데이터 존재 시 해당 데이터 재사용하여 api 호출 횟수 감소
     def list_all_projects(self, organizations=None, folders=None):
         projects = []
 
