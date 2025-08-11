@@ -44,6 +44,7 @@ class RoleManager(ResourceManager):
             yield from self.collect_organization_roles(organization, default_project_id)
 
         # Get all projects
+        ## 리팩토링 1 : 프로젝트 목록 조회 시 search_organizations 데이터 재사용하여 api 호출 횟수 감소
         projects = self.rm_v3_connector.list_all_projects(organizations)
         for project in projects:
             yield from self.collect_project_roles(project["projectId"])
@@ -76,6 +77,7 @@ class RoleManager(ResourceManager):
         role["status"] = "DISABLED" if role["stage"] == "DISABLED" else "ENABLED"
 
         # Get role details
+        ## 리팩토링 2 : role_type == "PROJECT" or role_type == "ORGANIZATION" 을 in 으로 변경
         if role_type in ["PROJECT", "ORGANIZATION"]:
             role["roleType"] = "CUSTOM"
         else:

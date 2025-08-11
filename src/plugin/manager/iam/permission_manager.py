@@ -45,18 +45,20 @@ class PermissionManager(ResourceManager):
 
         organizations = self.rm_v3_connector.search_organizations()
         folders = self.rm_v3_connector.search_folders()
+        ## 리팩토링 1 : 프로젝트 목록 조회 시 search_organizations, search_folders 데이터 재사용하여 api 호출 횟수 감소
         projects = self.rm_v3_connector.list_all_projects(organizations, folders)
 
         predefined_roles = self.iam_connector.list_roles()
+        ## 리팩토링 3 : 커스텀 역할 조회 시 삭제예정(soft delete, 7일 안에 복원 가능, 7일 후 완전삭제)된 역할도 조회하여 삭제된 역할도 수집
         organization_roles = []
         for organization in organizations:
             organization_roles.extend(
-                self.iam_connector.list_organization_roles(organization["name"])
+                self.iam_connector.list_organization_roles(organization["name"], True)
             )
         project_roles = []
         for project in projects:
             project_roles.extend(
-                self.iam_connector.list_project_roles(project["projectId"])
+                self.iam_connector.list_project_roles(project["projectId"], True)
             )
 
         self.role_id_to_info["predefined_roles"] = {
@@ -70,6 +72,7 @@ class PermissionManager(ResourceManager):
         }
 
         # Get service account info
+        ## 리팩토링 2-1 : 서비스 계정 조회 시 프로젝트 목록 조회(rm_v3_connector.list_all_projects())한 데이터 재사용하여 api 호출 횟수 감소
         self.get_service_account_info(projects)
 
         # Get organization permissions
@@ -172,13 +175,14 @@ class PermissionManager(ResourceManager):
                 role_details = self.iam_connector.get_role(role_id)
                 self.role_id_to_info["predefined_roles"][role_id] = role_details
 
-        if not role_details:
-            _LOGGER.warning(f"Missing {target_type} role: {role_id} in {target_name}")
-            return
+        ## 리팩토링 3-2 : 삭제된 역할인 경우 title 앞에 (DELETED) 추가하여 삭제된 역할 구분
+        title = role_details.get("title")
+        if role_details.get("deleted"):
+            title = f"(DELETED) {title}"
 
         binding_info["role"] = {
             "id": role_details.get("name"),
-            "name": role_details.get("title"),
+            "name": title,
             "roleType": role_type,
             "description": role_details.get("description"),
             "permissionCount": len(role_details.get("includedPermissions", [])),
@@ -226,6 +230,7 @@ class PermissionManager(ResourceManager):
 
     def get_service_account_info(self, projects=None):
         # Get all projects
+        ## 리팩토링 2-2 : 서비스 계정 조회 시 인자로 받는 projects 데이터 재사용하여 api 호출 횟수 감소
         if projects is None:
             projects = self.rm_v3_connector.list_all_projects()
 
