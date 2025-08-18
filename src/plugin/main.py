@@ -4,6 +4,8 @@ from typing import Generator
 
 from spaceone.core.error import ERROR_REQUIRED_PARAMETER
 from spaceone.inventory.plugin.collector.lib.server import CollectorPluginServer
+
+from .manager import *
 from .manager.base import ResourceManager
 
 app = CollectorPluginServer()
@@ -30,7 +32,13 @@ def collector_collect(params: dict) -> Generator[dict, None, None]:
         f"[collector_collect] Start Collecting Cloud Resources (project_id: {project_id})"
     )
     resource_mgrs = ResourceManager.list_managers()
+    _LOGGER.debug(
+        f"[collector_collect] Available managers: {[mgr.__name__ for mgr in resource_mgrs]}"
+    )
     for resource_mgr in resource_mgrs:
+        _LOGGER.debug(
+            f"[collector_collect] Processing manager: {resource_mgr.__name__}"
+        )
         yield from resource_mgr().collect_resources(options, secret_data, schema)
 
     _LOGGER.debug(

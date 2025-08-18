@@ -1,0 +1,100 @@
+name: Project
+group: Firebase
+provider: google_cloud
+is_primary: true
+is_major: true
+service_code: Firebase
+tags:
+  spaceone:icon: https://spaceone-custom-assets.s3.ap-northeast-2.amazonaws.com/console-assets/icons/cloud-services/google_cloud/Firebase.svg
+labels:
+  - key: project_id
+    value: projectId
+  - key: display_name
+    value: displayName
+  - key: project_number
+    value: projectNumber
+  - key: state
+    value: state
+  - key: status
+    value: status
+search:
+  fields:
+    - Project ID: data.projectId
+    - Display Name: data.displayName
+    - Project Number: data.projectNumber
+    - State: data.state
+      type: enum
+      enums:
+        - ACTIVE: green.500
+          label: Active
+        - DELETED: red.500
+          label: Deleted
+    - Status: data.status
+      type: enum
+      enums:
+        - ACTIVE: green.500
+          label: Active
+        - DELETED: red.500
+          label: Deleted
+    - Google Project ID: account
+
+table:
+  sort:
+    key: account
+    desc: true
+  fields:
+    - Project ID: data.projectId
+    - Display Name: data.displayName
+    - Project Number: data.projectNumber
+    - State: data.state
+      type: enum
+      enums:
+        - ACTIVE: green.500
+          name: Active
+          type: state
+        - DELETED: red.500
+          name: Deleted
+          type: state
+    - Status: data.status
+      type: enum
+      enums:
+        - ACTIVE: green.500
+          name: Active
+          type: state
+        - DELETED: red.500
+          name: Deleted
+          type: state
+    - Name: data.name
+    - ETag: data.etag
+    - Google Project ID: account
+
+tabs.0:
+  name: Details
+  type: item
+  fields:
+    - Project ID: data.projectId
+    - Display Name: data.displayName
+    - Project Number: data.projectNumber
+    - State: data.state
+      type: enum
+      enums:
+        - ACTIVE: green.500
+          name: Active
+          type: state
+        - DELETED: red.500
+          name: Deleted
+          type: state
+    - Status: data.status
+      type: enum
+      enums:
+        - ACTIVE: green.500
+          name: Active
+          type: state
+        - DELETED: red.500
+          name: Deleted
+          type: state
+    - Name: data.name
+    - ETag: data.etag
+    - Google Project ID: account
+    - Annotations: data.annotations
+      type: object

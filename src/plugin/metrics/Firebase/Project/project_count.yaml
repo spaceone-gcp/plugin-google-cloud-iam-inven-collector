@@ -1,0 +1,20 @@
+---
+metric_id: metric-google-cloud-firebase-project-count
+name: Firebase Project Count
+metric_type: GAUGE
+resource_type: inventory.CloudService:google_cloud.Firebase.Project
+query_options:
+  group_by:
+    - key: data.projectId
+      name: Project ID
+      default: true
+    - key: data.state
+      name: State
+    - key: data.status
+      name: Status
+  fields:
+    value:
+      operator: count
+unit: Count
+namespace_id: ns-google-cloud-firebase-project
+version: '1.0'
