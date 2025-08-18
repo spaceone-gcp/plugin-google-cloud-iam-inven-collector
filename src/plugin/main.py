@@ -4,7 +4,8 @@ from typing import Generator
 
 from spaceone.core.error import ERROR_REQUIRED_PARAMETER
 from spaceone.inventory.plugin.collector.lib.server import CollectorPluginServer
-from .manager.base import ResourceManager
+
+from plugin.manager.cloud_run_manager import CloudRunManager
 
 app = CollectorPluginServer()
 
@@ -29,14 +30,21 @@ def collector_collect(params: dict) -> Generator[dict, None, None]:
     _LOGGER.debug(
         f"[collector_collect] Start Collecting Cloud Resources (project_id: {project_id})"
     )
-    resource_mgrs = ResourceManager.list_managers()
-    for resource_mgr in resource_mgrs:
-        yield from resource_mgr().collect_resources(options, secret_data, schema)
+    
+    # TODO : 기존 코드로 머지 전 주석 제거 필요
+    # resource_mgrs = ResourceManager.list_managers()
+    # for resource_mgr in resource_mgrs:
+    #     yield from resource_mgr().collect_resources(options, secret_data, schema)
 
     _LOGGER.debug(
         f"[collector_collect] Finished Collecting Cloud Resources "
         f"(project_id: {project_id}, duration: {time.time() - start_time:.2f}s)"
     )
+
+    # TODO : 테스트 코드로 머지 전 하위 코드 제거 필요
+    result = {"result": CloudRunManager().collect_cloud_services(options, secret_data, schema)}
+    _LOGGER.debug(f'result: {result}')
+    return ""
 
 
 def _create_init_metadata() -> dict:
